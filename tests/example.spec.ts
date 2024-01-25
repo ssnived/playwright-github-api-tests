@@ -1,28 +1,23 @@
 import { test, expect, APIRequestContext } from "@playwright/test";
+import {
+  githubAPIContext,
+  githubAPIContextBad,
+  setupGithubAPIContext,
+  setupGithubAPIContextBad,
+} from "../utils/api-context";
 
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
-let apiContext: APIRequestContext;
-
 test.beforeAll(async ({ playwright }) => {
-  apiContext = await playwright.request.newContext({
-    // All requests we send go to this API endpoint.
-    baseURL: process.env.GITHUB_BASE_URL,
-    extraHTTPHeaders: {
-      // We set this header per GitHub guidelines.
-      Accept: "application/vnd.github.v3+json",
-      // Add authorization token to all requests.
-      // Assuming personal access token available in the environment.
-      Authorization: `token ${process.env.GITHUB_API_TOKEN}`,
-    },
-  });
+  await setupGithubAPIContext(playwright);
+  await setupGithubAPIContextBad(playwright);
 });
 
 test("should create and delete a github repository via api", async () => {
   //create repo
-  const postCreateResponse = await apiContext.post(`/user/repos`, {
+  const postCreateResponse = await githubAPIContext.post(`/user/repos`, {
     data: {
       name: process.env.GITHUB_TEST_REPO_NAME,
       description: "hello this is a test",
@@ -34,7 +29,7 @@ test("should create and delete a github repository via api", async () => {
   await expect(postCreateResponse).toBeOK();
 
   //validate creation
-  const getCreateResponse = await apiContext.get(
+  const getCreateResponse = await githubAPIContext.get(
     `/repos/${process.env.GITHUB_TEST_USERNAME}/${process.env.GITHUB_TEST_REPO_NAME}`
   );
 
@@ -42,14 +37,14 @@ test("should create and delete a github repository via api", async () => {
   await expect(getCreateResponseStatus).toEqual(200);
 
   //delete repo
-  const postDeleteResponse = await apiContext.delete(
+  const postDeleteResponse = await githubAPIContext.delete(
     `/repos/${process.env.GITHUB_TEST_USERNAME}/${process.env.GITHUB_TEST_REPO_NAME}`
   );
 
   await expect(postDeleteResponse).toBeOK();
 
   //validate deletion
-  const getDeleteResponse = await apiContext.get(
+  const getDeleteResponse = await githubAPIContext.get(
     `/repos/${process.env.GITHUB_TEST_USERNAME}/${process.env.GITHUB_TEST_REPO_NAME}`
   );
 
@@ -59,5 +54,5 @@ test("should create and delete a github repository via api", async () => {
 
 test.afterAll(async ({}) => {
   // Dispose all responses.
-  await apiContext.dispose();
+  await githubAPIContext.dispose();
 });
