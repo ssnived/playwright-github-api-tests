@@ -48,4 +48,5 @@ test("should create and delete a github repository via api", async () => {
 test.afterAll(async ({}) => {
   // Dispose all responses.
   await githubAPIContext.dispose();
+  await githubAPIContextBad.dispose();
 });
